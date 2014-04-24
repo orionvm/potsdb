@@ -31,7 +31,12 @@ def non_daemon_slow_test():
 		extratag = str(random.randint(0, 1000000))
 		t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)
 
-
+def duplicate_test():
+	# Attempts to send 10 metrics the same, should only send 1
+	print sys._getframe().f_code.co_name
+	t = tsdb(HOST, port=PORT, daemon=False)
+	for x in range(10):
+		t.log('test.metric2', 1, cheese='blue')
 
 
 if len(sys.argv) < 3:
@@ -42,8 +47,9 @@ HOST=sys.argv[1]
 PORT=sys.argv[2]
 
 
-#daemon_test()
-#non_daemon_test()
-#daemon_slow_test()
+daemon_test()
+non_daemon_test()
+daemon_slow_test()
 non_daemon_slow_test()
+#duplicate_test()
 print 'done'

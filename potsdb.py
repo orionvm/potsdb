@@ -6,6 +6,10 @@ import time
 import random
 
 MPS_LIMIT = 100
+
+_last_timestamp = None
+_last_metrics = set()
+
 def _mksocket(host, port, q, done):
 	"""Returns a tcp socket to (host/port). Retries forever every 5 seconds if connection fails"""
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -61,9 +65,7 @@ def _push(host, port, q, done, mps):
 		sock.close()
 
 class tsdb():
-	last_timestamp = None
-	last_metrics = set()
-	
+
 	def __init__(self, host, port=4242, qsize=1000, host_tag=True, daemon=False, mps=MPS_LIMIT):
 		"""Main tsdb client. Connect to host/port. Buffer up to qsize metrics"""
 
@@ -71,23 +73,26 @@ class tsdb():
 		self.done = threading.Event()
 		self.t = threading.Thread(target=_push, args = (host, int(port), self.q, self.done, mps))
 		self.t.daemon = daemon
+		self.host = host
+		self.port = port
 		
 		if host_tag == True:
-			self.host = socket.gethostname()
+			self.host_tag = socket.gethostname()
 		elif isinstance(host_tag, str):
-			self.host = host_tag
+			self.host_tag = host_tag
 			
 		self.t.start()
 
 	def log(self, name, val, **tags):
 		"""Log metric name with value val. You must include at least one tag as a kwarg"""
+		global _last_timestamp, _last_metrics
 		
 		val = float(val) #Duck type to float/int, if possible.
 		if int(val) == val:
 			val = int(val)
 
-		if self.host and 'host' not in tags:
-			tags['host'] = self.host # set host tag i
+		if self.host_tag and 'host' not in tags:
+			tags['host'] = self.host_tag
 
 		# get timestamp from system time, unless it's supplied as a tag
 		timestamp = int(tags.pop('timestamp', time.time()))
@@ -101,15 +106,15 @@ class tsdb():
 		# metric, timestamp and tags. So we keep a temporary set of what points
 		# we have sent for the last timestamp value. If we encounter a duplicate, 
 		# it is dropped.
-		unique_str = name + str(timestamp) + tagvals
-		if timestamp == self.last_timestamp or self.last_timestamp == None:
-			if unique_str in self.last_metrics:
+		unique_str = name + str(timestamp) + tagvals + self.host + str(self.port)
+		if timestamp == _last_timestamp or _last_timestamp == None:
+			if unique_str in _last_metrics:
 				return # discard duplicate metrics
 			else:
-				self.last_metrics.add(unique_str)
+				_last_metrics.add(unique_str)
 		else:
-			self.last_timestamp = timestamp
-			self.last_metrics = set()
+			_last_timestamp = timestamp
+			_last_metrics.clear()
 		
 		line = "put %s %d %d %s\n" % (name, timestamp, val, tagvals)
 
