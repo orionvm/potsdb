@@ -16,7 +16,7 @@ _valid_metric_chars = set(string.ascii_letters + string.digits + '-_./')
 def _mksocket(host, port, q, done, parent_thread):
 	"""Returns a tcp socket to (host/port). Retries forever every 5 seconds if connection fails"""
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	while 1:
+	while parent_thread.is_alive():
 		try:
 			s.connect((host, port))	
 			return s

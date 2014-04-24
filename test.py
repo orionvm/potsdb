@@ -42,13 +42,12 @@ def invalid_metric_test():
 	# Attempts to send 10 metrics the same, should only send 1
 	print sys._getframe().f_code.co_name
 	t = tsdb(HOST, port=PORT, daemon=False)
-	t.log('test.metric2 roflcopter!', 1, cheese='blue')
-	'''try:
+	try:
 		t.log('test.metric2 roflcopter!', 1, cheese='blue')
 	except AssertionError as ex:
 		print ex
 	else:
-		raise Exception('should have raised AssertionError for invalid metric')'''
+		raise Exception('should have raised AssertionError for invalid metric')
 
 if len(sys.argv) < 3:
 	print 'usage: %s host port' % sys.argv[0]
