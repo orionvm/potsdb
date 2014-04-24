@@ -38,6 +38,17 @@ def duplicate_test():
 	for x in range(10):
 		t.log('test.metric2', 1, cheese='blue')
 
+def invalid_metric_test():
+	# Attempts to send 10 metrics the same, should only send 1
+	print sys._getframe().f_code.co_name
+	t = tsdb(HOST, port=PORT, daemon=False)
+	t.log('test.metric2 roflcopter!', 1, cheese='blue')
+	'''try:
+		t.log('test.metric2 roflcopter!', 1, cheese='blue')
+	except AssertionError as ex:
+		print ex
+	else:
+		raise Exception('should have raised AssertionError for invalid metric')'''
 
 if len(sys.argv) < 3:
 	print 'usage: %s host port' % sys.argv[0]
@@ -47,9 +58,10 @@ HOST=sys.argv[1]
 PORT=sys.argv[2]
 
 
-daemon_test()
-non_daemon_test()
-daemon_slow_test()
-non_daemon_slow_test()
+#daemon_test()
+#non_daemon_test()
+#daemon_slow_test()
+#non_daemon_slow_test()
 #duplicate_test()
+invalid_metric_test()
 print 'done'

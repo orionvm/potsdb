@@ -4,13 +4,16 @@ import Queue
 import threading
 import time
 import random
+import string
 
 MPS_LIMIT = 100
 
 _last_timestamp = None
 _last_metrics = set()
 
-def _mksocket(host, port, q, done):
+_valid_metric_chars = set(string.ascii_letters + string.digits + '-_./')
+
+def _mksocket(host, port, q, done, parent_thread):
 	"""Returns a tcp socket to (host/port). Retries forever every 5 seconds if connection fails"""
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	while 1:
@@ -23,16 +26,16 @@ def _mksocket(host, port, q, done):
 			time.sleep(5)
 
 
-def _push(host, port, q, done, mps):
+def _push(host, port, q, done, mps, parent_thread):
 	"""Worker thread. Connect to host/port, pull data from q until done is set"""
 
 	sock = None
 	retry_line = None
-	while 1:
+	while parent_thread.is_alive():
 		stime = time.time()
 
 		if sock == None:
-			sock = _mksocket(host, port, q, done)
+			sock = _mksocket(host, port, q, done, parent_thread)
 
 		if retry_line:
 			line = retry_line
@@ -71,7 +74,8 @@ class tsdb():
 
 		self.q = Queue.Queue(maxsize=qsize)
 		self.done = threading.Event()
-		self.t = threading.Thread(target=_push, args = (host, int(port), self.q, self.done, mps))
+		self.t = threading.Thread(target=_push, 
+		    args = (host, int(port), self.q, self.done, mps, threading.current_thread()))
 		self.t.daemon = daemon
 		self.host = host
 		self.port = port
@@ -86,7 +90,10 @@ class tsdb():
 	def log(self, name, val, **tags):
 		"""Log metric name with value val. You must include at least one tag as a kwarg"""
 		global _last_timestamp, _last_metrics
-		
+	
+		# check if valid metric name
+		assert all(c in _valid_metric_chars for c in name), "invalid metric name " + name
+	
 		val = float(val) #Duck type to float/int, if possible.
 		if int(val) == val:
 			val = int(val)
@@ -99,14 +106,14 @@ class tsdb():
 
 		assert not self.done.is_set(), "Connection closed!"
 		assert tags != {}, "Need at least one tag"
-		
+	
 		tagvals = ' '.join(['%s=%s' % (k,v) for k,v in tags.items()])
-		
+	
 		# OpenTSDB has major problems if you insert a data point with the same
 		# metric, timestamp and tags. So we keep a temporary set of what points
 		# we have sent for the last timestamp value. If we encounter a duplicate, 
 		# it is dropped.
-		unique_str = name + str(timestamp) + tagvals + self.host + str(self.port)
+		unique_str = "%s, %s, %s, %s, %s" % (name, timestamp, tagvals, self.host, self.port)
 		if timestamp == _last_timestamp or _last_timestamp == None:
 			if unique_str in _last_metrics:
 				return # discard duplicate metrics
@@ -115,7 +122,7 @@ class tsdb():
 		else:
 			_last_timestamp = timestamp
 			_last_metrics.clear()
-		
+	
 		line = "put %s %d %d %s\n" % (name, timestamp, val, tagvals)
 
 		try:
@@ -123,6 +130,7 @@ class tsdb():
 		except Queue.Full:
 			self.q.get() #Drop the oldest metric to make room
 			self.q.put(line, False)
+				
 	
 	def close(self):
 		"""Close and clean up the connection"""
