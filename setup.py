@@ -9,7 +9,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "otsdb_sender",
+    name = "potsdb",
     version = "0.0.1",
     author = "Alex Sharp, Chris McClymont",
     author_email = "alex.sharp@orionvm.com",
@@ -17,8 +17,8 @@ setup(
                    "thread for TCP communication."),
     license = "GNU GPL",
     keywords = "opentsdb, tsdb, time series",
-    url = "http://github.com/orionvm/otsdb_sender",
-    py_modules=['otsdb_sender'],
+    url = "http://github.com/orionvm/potsdb",
+    py_modules=['potsdb'],
     long_description=read('README.md'),
     classifiers=[
         "Development Status :: 3 - Alpha",
