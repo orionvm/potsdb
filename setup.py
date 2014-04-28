@@ -13,13 +13,13 @@ setup(
     version = "0.0.1",
     author = "Alex Sharp, Chris McClymont",
     author_email = "alex.sharp@orionvm.com",
-    description = ("A client to OpenTSDB which creates a separate thread for TCP "
-                                   "communication."),
+    description = ("A Python client for OpenTSDB which creates a separate "
+                   "thread for TCP communication."),
     license = "GNU GPL",
     keywords = "opentsdb, tsdb, time series",
     url = "http://github.com/orionvm/otsdb_sender",
     py_modules=['otsdb_sender'],
-    long_description=read('README'),
+    long_description=read('README.md'),
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
