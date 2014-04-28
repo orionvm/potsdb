@@ -1,4 +1,4 @@
-from potsdb import tsdb
+from otsdb_sender import tsdb
 import sys
 import random
 

@@ -6,7 +6,7 @@ import time
 import random
 import string
 
-MPS_LIMIT = 100
+MPS_LIMIT = 100 # Limit on metrics per second to send to OpenTSDB
 
 _last_timestamp = None
 _last_metrics = set()
@@ -14,16 +14,19 @@ _last_metrics = set()
 _valid_metric_chars = set(string.ascii_letters + string.digits + '-_./')
 
 def _mksocket(host, port, q, done, parent_thread):
-	"""Returns a tcp socket to (host/port). Retries forever every 5 seconds if connection fails"""
+	"""Returns a tcp socket to (host/port). Retries forever if connection fails"""
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.settimeout(2)
 	while parent_thread.is_alive():
 		try:
 			s.connect((host, port))	
 			return s
-		except:
+		except Exception as ex:
 			# retry connection forever, as long as parent is still alive
-			assert not done.is_set(), "Failed to connect to tsdb server"
-			time.sleep(5)
+			# assert not done.is_set(), "Failed to connect to tsdb server"
+			if not parent_thread.is_alive():
+				raise ex
+			time.sleep(0.5)
 
 
 def _push(host, port, q, done, mps, parent_thread):
@@ -36,6 +39,8 @@ def _push(host, port, q, done, mps, parent_thread):
 
 		if sock == None:
 			sock = _mksocket(host, port, q, done, parent_thread)
+			if sock == None:
+				break
 
 		if retry_line:
 			line = retry_line
@@ -69,22 +74,30 @@ def _push(host, port, q, done, mps, parent_thread):
 
 class tsdb():
 
-	def __init__(self, host, port=4242, qsize=1000, host_tag=True, daemon=False, mps=MPS_LIMIT):
+	def __init__(self, host, port=4242, qsize=1000, host_tag=True, daemon=False, 
+	             mps=MPS_LIMIT, check_host=True):
 		"""Main tsdb client. Connect to host/port. Buffer up to qsize metrics"""
 
 		self.q = Queue.Queue(maxsize=qsize)
 		self.done = threading.Event()
-		self.t = threading.Thread(target=_push, 
-		    args = (host, int(port), self.q, self.done, mps, threading.current_thread()))
-		self.t.daemon = daemon
 		self.host = host
-		self.port = port
+		self.port = int(port)
+		
+		# Make initial check that the host is up, because once in the
+		# background thread it will be silently ignored/retried
+		if check_host == True:
+			temp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			temp_sock.settimeout(3)
+			temp_sock.connect((self.host, self.port))
+			temp_sock.close()
 		
 		if host_tag == True:
 			self.host_tag = socket.gethostname()
 		elif isinstance(host_tag, str):
 			self.host_tag = host_tag
 			
+		self.t = threading.Thread(target=_push, 
+		    args = (host, self.port, self.q, self.done, mps, threading.current_thread()))
 		self.t.start()
 
 	def log(self, name, val, **tags):
@@ -104,7 +117,7 @@ class tsdb():
 		# get timestamp from system time, unless it's supplied as a tag
 		timestamp = int(tags.pop('timestamp', time.time()))
 
-		assert not self.done.is_set(), "Connection closed!"
+		assert not self.done.is_set(), "tsdb object has been closed"
 		assert tags != {}, "Need at least one tag"
 	
 		tagvals = ' '.join(['%s=%s' % (k,v) for k,v in tags.items()])
