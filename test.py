@@ -1,11 +1,11 @@
-from potsdb import tsdb
+import potsdb
 import sys
 import random
 import time
 
 def normal_test():
 	print sys._getframe().f_code.co_name
-	t = tsdb(HOST, port=PORT)
+	t = potsdb.client(HOST, port=PORT)
 	for x in range(100):
 		extratag = str(random.randint(0, 1000000))
 		t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)
@@ -14,7 +14,7 @@ def normal_test():
 		
 def slow_test():
 	print sys._getframe().f_code.co_name
-	t = tsdb(HOST, port=PORT, mps=1)
+	t = potsdb.client(HOST, port=PORT, mps=1)
 	for x in range(10):
 		extratag = str(random.randint(0, 1000000))
 		t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)	
@@ -23,7 +23,7 @@ def slow_test():
 		
 def duplicate_test():
 	print sys._getframe().f_code.co_name
-	t = tsdb(HOST, port=PORT)
+	t = potsdb.client(HOST, port=PORT)
 	for x in range(10):
 		t.log('test.metric2', 1, cheese='blue')
 	t.wait()
@@ -32,7 +32,7 @@ def duplicate_test():
 def invalid_metric_test():
 	# Attempts to send a metric with invalid name (spaces)
 	print sys._getframe().f_code.co_name
-	t = tsdb(HOST, port=PORT)
+	t = potsdb.client(HOST, port=PORT)
 	try:
 		t.log('test.metric2 roflcopter!', 1, cheese='blue')
 	except AssertionError as ex:
@@ -45,7 +45,7 @@ def invalid_metric_test():
 def timestamp_test():
 	# sends many metrics while specifying the timestamp
 	print sys._getframe().f_code.co_name
-	t = tsdb(HOST, PORT)
+	t = potsdb.client(HOST, PORT)
 	ts = int(time.time())
 	for x in range(100):
 		t.log('test.metric4', 20, tag1='timestamptest', timestamp=ts)
@@ -55,7 +55,7 @@ def timestamp_test():
 
 def qsize_test(size):
 	print sys._getframe().f_code.co_name
-	t = tsdb(HOST, port=PORT, qsize=size)
+	t = potsdb.client(HOST, port=PORT, qsize=size)
 	for x in range(5*size):
 		extratag = str(random.randint(0, 1000000))
 		t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)

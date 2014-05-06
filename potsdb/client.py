@@ -69,7 +69,7 @@ def _push(host, port, q, done, mps, stop):
 	if sock:
 		sock.close()
 
-class tsdb():
+class client():
 
 	def __init__(self, host, port=4242, qsize=1000, host_tag=True, 
 	             mps=MPS_LIMIT, check_host=True):
@@ -105,6 +105,8 @@ class tsdb():
 		"""Log metric name with value val. You must include at least one tag as a kwarg"""
 		global _last_timestamp, _last_metrics
 	
+		# do not allow .log after closing
+		assert not self.done.is_set(), "worker thread has been closed"
 		# check if valid metric name
 		assert all(c in _valid_metric_chars for c in name), "invalid metric name " + name
 	
