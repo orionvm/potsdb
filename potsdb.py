@@ -13,32 +13,28 @@ _last_metrics = set()
 
 _valid_metric_chars = set(string.ascii_letters + string.digits + '-_./')
 
-def _mksocket(host, port, q, done, parent_thread):
+def _mksocket(host, port, q, done, stop):
 	"""Returns a tcp socket to (host/port). Retries forever if connection fails"""
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.settimeout(2)
-	while parent_thread.is_alive():
+	while not stop.is_set():
 		try:
 			s.connect((host, port))	
 			return s
 		except Exception as ex:
-			# retry connection forever, as long as parent is still alive
-			# assert not done.is_set(), "Failed to connect to tsdb server"
-			if not parent_thread.is_alive():
-				raise ex
-			time.sleep(0.5)
+			pass
 
 
-def _push(host, port, q, done, mps, parent_thread):
+def _push(host, port, q, done, mps, stop):
 	"""Worker thread. Connect to host/port, pull data from q until done is set"""
-
 	sock = None
 	retry_line = None
-	while parent_thread.is_alive():
+	#while (daemon == False and not done.is_set()) or parent_thread.is_alive():
+	while not ( stop.is_set() or ( done.is_set() and retry_line == None and q.empty()) ):
 		stime = time.time()
 
 		if sock == None:
-			sock = _mksocket(host, port, q, done, parent_thread)
+			sock = _mksocket(host, port, q, done, stop)
 			if sock == None:
 				break
 
@@ -56,6 +52,7 @@ def _push(host, port, q, done, mps, parent_thread):
 
 		try:
 			sock.send(line)
+			#print line
 		except:
 			sock = None # notify that we need to make a new socket at start of loop
 			retry_line = line # can't really put back in q, so remember to retry this line
@@ -74,14 +71,16 @@ def _push(host, port, q, done, mps, parent_thread):
 
 class tsdb():
 
-	def __init__(self, host, port=4242, qsize=1000, host_tag=True, daemon=False, 
+	def __init__(self, host, port=4242, qsize=1000, host_tag=True, 
 	             mps=MPS_LIMIT, check_host=True):
 		"""Main tsdb client. Connect to host/port. Buffer up to qsize metrics"""
 
 		self.q = Queue.Queue(maxsize=qsize)
 		self.done = threading.Event()
+		self._stop = threading.Event()
 		self.host = host
 		self.port = int(port)
+		self.queued = 0
 		
 		# Make initial check that the host is up, because once in the
 		# background thread it will be silently ignored/retried
@@ -97,7 +96,9 @@ class tsdb():
 			self.host_tag = host_tag
 			
 		self.t = threading.Thread(target=_push, 
-		    args = (host, self.port, self.q, self.done, mps, threading.current_thread()))
+		    args = (host, self.port, self.q, self.done, mps, self._stop))
+		#self.t.daemon = daemon
+		self.t.daemon = True
 		self.t.start()
 
 	def log(self, name, val, **tags):
@@ -140,6 +141,7 @@ class tsdb():
 
 		try:
 			self.q.put(line, False)
+			self.queued += 1
 		except Queue.Full:
 			self.q.get() #Drop the oldest metric to make room
 			self.q.put(line, False)
@@ -148,6 +150,15 @@ class tsdb():
 	def close(self):
 		"""Close and clean up the connection"""
 		self.done.set()
+		
+	def wait(self):
+		"""Close then block waiting for background thread to finish"""
+		self.close()
+		while self.t.is_alive():
+			time.sleep(0.05)
+			
+	def stop(self):
+		self._stop.set()
 
 	def __del__(self):
 		self.close()
