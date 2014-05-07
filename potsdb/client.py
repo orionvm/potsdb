@@ -147,6 +147,8 @@ class Client():
             self.q.get()  #Drop the oldest metric to make room
             self.q.put(line, False)
 
+    send = log  # Alias function name
+
     def close(self):
         """Close and clean up the connection"""
         self.done.set()
