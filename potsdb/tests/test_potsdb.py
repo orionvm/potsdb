@@ -3,6 +3,7 @@ import sys
 import random
 import time
 import os
+import socket
 
 from unittest import TestCase, main as unittest_main
 
@@ -13,7 +14,7 @@ except KeyError:
 finally:
     PORT = int(os.environ.get('OTSDB_TEST_PORT', '4242'))
 
-class TestPostDB(TestCase):
+class TestPotsDB(TestCase):
     def test_normal(self):
         t = potsdb.Client(HOST, port=PORT)
         for x in range(100):
@@ -21,6 +22,7 @@ class TestPostDB(TestCase):
             t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)
         t.wait()
         self.assertEquals(t.queued, 100)
+        self.assertFalse(t.t.is_alive())
 
     def test_slow_mps(self):
         t = potsdb.Client(HOST, port=PORT, mps=1)
@@ -63,6 +65,15 @@ class TestPostDB(TestCase):
         print "qsize was %s, sent %s" % (size, t.queued)
         self.assertGreaterEqual(t.queued, size)
 
+    def test_timeout(self):
+        self.assertRaises(socket.error, lambda: potsdb.Client('127.0.0.1', 4))
+
+    def test_timeout_no_checkhost(self):
+        t = potsdb.Client('127.0.0.1', 4, check_host=False)
+        t.log('test.metric2', 100)
+        self.assertEquals(t.queued, 1)
+        self.assertTrue(t.t.is_alive())
+        t.stop()
 
     @classmethod
     def tearDownClass(cls):
