@@ -77,6 +77,22 @@ class TestPotsDB(TestCase):
         self.assertTrue(t.t.is_alive())
         t.stop()
 
+    def test_protocol_integer(self):
+        t = _get_client(host_tag='tester')
+        output = t.log('test.metric7', 100, timestamp='1234567890')
+        self.assertEquals(output, "put test.metric7 1234567890 100 host=tester\n")
+
+    def test_protocol_float(self):
+        t = _get_client(host_tag='tester')
+        output = t.log('test.metric8', 0.48569, timestamp='1234567890')
+        self.assertEquals(output, "put test.metric8 1234567890 0.48569 host=tester\n")
+
+    def test_automatic_timestamp(self):
+        t = _get_client()
+        output = t.log('test.metric9', 123)
+        timestamp = int(output.split(' ')[2])
+        self.assertTrue( time.time() - timestamp < 1) # within 1 seconds of current time
+
     @classmethod
     def tearDownClass(cls):
         print 'done'
