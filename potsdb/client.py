@@ -25,7 +25,7 @@ def _mksocket(host, port, q, done, stop):
             pass
 
 
-def _push(host, port, q, done, mps, stop):
+def _push(host, port, q, done, mps, stop, test_mode):
     """Worker thread. Connect to host/port, pull data from q until done is set"""
     sock = None
     retry_line = None
@@ -33,7 +33,7 @@ def _push(host, port, q, done, mps, stop):
     while not ( stop.is_set() or ( done.is_set() and retry_line == None and q.empty()) ):
         stime = time.time()
 
-        if sock == None:
+        if sock == None and not test_mode:
             sock = _mksocket(host, port, q, done, stop)
             if sock == None:
                 break
@@ -50,13 +50,13 @@ def _push(host, port, q, done, mps, stop):
                 else:  # no items in queue, but parent might send more
                     continue
 
-        try:
-            sock.send(line)
-        #print line
-        except:
-            sock = None  # notify that we need to make a new socket at start of loop
-            retry_line = line  # can't really put back in q, so remember to retry this line
-            continue
+        if not test_mode:
+            try:
+                sock.send(line)
+            except:
+                sock = None  # notify that we need to make a new socket at start of loop
+                retry_line = line  # can't really put back in q, so remember to retry this line
+                continue
 
         etime = time.time() - stime  #time that actually elapsed
 
@@ -71,7 +71,7 @@ def _push(host, port, q, done, mps, stop):
 
 class Client():
     def __init__(self, host, port=4242, qsize=1000, host_tag=True,
-                 mps=MPS_LIMIT, check_host=True):
+                 mps=MPS_LIMIT, check_host=True, test_mode=False):
         """Main tsdb client. Connect to host/port. Buffer up to qsize metrics"""
 
         self.q = Queue.Queue(maxsize=qsize)
@@ -95,7 +95,7 @@ class Client():
             self.host_tag = host_tag
 
         self.t = threading.Thread(target=_push,
-                                  args=(host, self.port, self.q, self.done, mps, self._stop))
+                                  args=(host, self.port, self.q, self.done, mps, self._stop, test_mode))
         #self.t.daemon = daemon
         self.t.daemon = True
         self.t.start()
@@ -146,6 +146,7 @@ class Client():
         except Queue.Full:
             self.q.get()  #Drop the oldest metric to make room
             self.q.put(line, False)
+        return line # So we can get visibility on what was sent
 
     send = log  # Alias function name
 
