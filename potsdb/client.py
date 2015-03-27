@@ -138,7 +138,7 @@ class Client():
             _last_timestamp = timestamp
             _last_metrics.clear()
 
-        line = "put %s %d %d %s\n" % (name, timestamp, val, tagvals)
+        line = "put %s %d %s %s\n" % (name, timestamp, val, tagvals)
 
         try:
             self.q.put(line, False)
