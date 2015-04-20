@@ -28,11 +28,14 @@ class TestPotsDB(TestCase):
 
     def test_slow_mps(self):
         t = _get_client(mps=1)
-        for x in range(10):
+        started = time.time()
+        for x in range(4):
             extratag = str(random.randint(0, 1000000))
             t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)
         t.wait()
-        self.assertEqual(t.queued, 10)
+        finished = time.time()
+        self.assertGreaterEqual(finished-started, 3)
+        self.assertEqual(t.queued, 4)
 
     def test_duplicate_metric(self):
         t = _get_client()
