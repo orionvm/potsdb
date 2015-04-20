@@ -23,7 +23,7 @@ class TestPotsDB(TestCase):
             extratag = str(random.randint(0, 1000000))
             t.log('test.metric1', random.randint(0, 200), cheese='blue', random=extratag)
         t.wait()
-        self.assertEquals(t.queued, 100)
+        self.assertEqual(t.queued, 100)
         self.assertFalse(t.t.is_alive())
 
     def test_slow_mps(self):
@@ -32,7 +32,7 @@ class TestPotsDB(TestCase):
             extratag = str(random.randint(0, 1000000))
             t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)
         t.wait()
-        self.assertEquals(t.queued, 10)
+        self.assertEqual(t.queued, 10)
 
     def test_duplicate_metric(self):
         t = _get_client()
@@ -45,7 +45,7 @@ class TestPotsDB(TestCase):
         # Attempts to send a metric with invalid name (spaces)
         t = _get_client()
         self.assertRaises(AssertionError, lambda: t.log('test.metric2 roflcopter!', 1, cheese='blue'))
-        self.assertEquals(t.queued, 0)
+        self.assertEqual(t.queued, 0)
         t.stop()
 
     def test_setting_timestamp_multiple(self):
@@ -55,7 +55,7 @@ class TestPotsDB(TestCase):
         for x in range(100):
             t.log('test.metric4', 20, tag1='timestamptest', timestamp=ts)
             ts -= 1
-        self.assertEquals(t.queued, 100)
+        self.assertEqual(t.queued, 100)
         t.wait()
 
     def test_qsize_change(self, size=100):
@@ -73,19 +73,19 @@ class TestPotsDB(TestCase):
     def test_timeout_no_checkhost(self):
         t = _get_client()
         t.log('test.metric6', 100)
-        self.assertEquals(t.queued, 1)
+        self.assertEqual(t.queued, 1)
         self.assertTrue(t.t.is_alive())
         t.stop()
 
     def test_protocol_integer(self):
         t = _get_client(host_tag='tester')
         output = t.log('test.metric7', 100, timestamp='1234567890')
-        self.assertEquals(output, "put test.metric7 1234567890 100 host=tester\n")
+        self.assertEqual(output, "put test.metric7 1234567890 100 host=tester\n")
 
     def test_protocol_float(self):
         t = _get_client(host_tag='tester')
         output = t.log('test.metric8', 0.48569, timestamp='1234567890')
-        self.assertEquals(output, "put test.metric8 1234567890 0.48569 host=tester\n")
+        self.assertEqual(output, "put test.metric8 1234567890 0.48569 host=tester\n")
 
     def test_automatic_timestamp(self):
         t = _get_client()
