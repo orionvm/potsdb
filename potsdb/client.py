@@ -1,9 +1,12 @@
 import socket
-import Queue
 import threading
 import time
 import random
 import string
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 MPS_LIMIT = 100  # Limit on metrics per second to send to OpenTSDB
 
@@ -29,7 +32,6 @@ def _push(host, port, q, done, mps, stop, test_mode):
     """Worker thread. Connect to host/port, pull data from q until done is set"""
     sock = None
     retry_line = None
-    #while (daemon == False and not done.is_set()) or parent_thread.is_alive():
     while not ( stop.is_set() or ( done.is_set() and retry_line == None and q.empty()) ):
         stime = time.time()
 
@@ -52,7 +54,7 @@ def _push(host, port, q, done, mps, stop, test_mode):
 
         if not test_mode:
             try:
-                sock.send(line)
+                sock.send(line.encode('utf-8'))
             except:
                 sock = None  # notify that we need to make a new socket at start of loop
                 retry_line = line  # can't really put back in q, so remember to retry this line
@@ -74,7 +76,7 @@ class Client():
                  mps=MPS_LIMIT, check_host=True, test_mode=False):
         """Main tsdb client. Connect to host/port. Buffer up to qsize metrics"""
 
-        self.q = Queue.Queue(maxsize=qsize)
+        self.q = queue.Queue(maxsize=qsize)
         self.done = threading.Event()
         self._stop = threading.Event()
         self.host = host
@@ -143,7 +145,7 @@ class Client():
         try:
             self.q.put(line, False)
             self.queued += 1
-        except Queue.Full:
+        except queue.Full:
             self.q.get()  #Drop the oldest metric to make room
             self.q.put(line, False)
         return line # So we can get visibility on what was sent

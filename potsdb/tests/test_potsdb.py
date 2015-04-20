@@ -28,7 +28,7 @@ class TestPotsDB(TestCase):
 
     def test_slow_mps(self):
         t = _get_client(mps=1)
-        for x in xrange(10):
+        for x in range(10):
             extratag = str(random.randint(0, 1000000))
             t.log('test.metric2', random.randint(0, 200), cheese='blue', random=extratag)
         t.wait()
@@ -64,7 +64,7 @@ class TestPotsDB(TestCase):
             extratag = str(random.randint(0, 1000000))
             t.log('test.metric5', random.randint(0, 200), cheese='blue', random=extratag)
         t.wait()
-        print "qsize was %s, sent %s" % (size, t.queued)
+        print("qsize was %s, sent %s" % (size, t.queued))
         self.assertGreaterEqual(t.queued, size)
 
     def test_timeout_from_check_host(self):
@@ -95,7 +95,7 @@ class TestPotsDB(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        print 'done'
+        print('done')
 
 
 if __name__ == '__main__':
