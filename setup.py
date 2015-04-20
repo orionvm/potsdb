@@ -24,7 +24,10 @@ if __name__ == '__main__':
         packages=find_packages(),
         long_description=read_md('README.md'),
         classifiers=[
-            "Development Status :: 3 - Alpha",
+            "Development Status :: 5 - Production/Stable",
+            "Intended Audience :: Developers",
+            "Intended Audience :: System Administrators",
+            "Operating System :: Unix",
             "Topic :: Utilities",
         ],
         test_suite=project_name + '.tests',
