@@ -1,8 +1,10 @@
+from __future__ import print_function
 import socket
 import threading
 import time
 import random
 import string
+import sys
 try:
     import queue
 except ImportError:
@@ -72,7 +74,7 @@ def _push(host, port, q, done, mps, stop, test_mode):
 
 
 class Client():
-    def __init__(self, host, port=4242, qsize=1000, host_tag=True,
+    def __init__(self, host, port=4242, qsize=100000, host_tag=True,
                  mps=MPS_LIMIT, check_host=True, test_mode=False):
         """Main tsdb client. Connect to host/port. Buffer up to qsize metrics"""
 
@@ -146,6 +148,7 @@ class Client():
             self.q.put(line, False)
             self.queued += 1
         except queue.Full:
+            print("potsdb - Warning: dropping oldest metric because Queue is full. Size: %s" % self.q.qsize(), file=sys.stderr)
             self.q.get()  #Drop the oldest metric to make room
             self.q.put(line, False)
         return line # So we can get visibility on what was sent
