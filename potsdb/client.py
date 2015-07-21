@@ -10,7 +10,7 @@ try:
 except ImportError:
     import Queue as queue
 
-MPS_LIMIT = 100  # Limit on metrics per second to send to OpenTSDB
+MPS_LIMIT = 0  # Limit on metrics per second to send to OpenTSDB
 
 _last_timestamp = None
 _last_metrics = set()
@@ -65,9 +65,10 @@ def _push(host, port, q, done, mps, stop, test_mode):
         etime = time.time() - stime  #time that actually elapsed
 
         #Expected value of wait_time is 1/MPS_LIMIT, ie. MPS_LIMIT per second.
-        wait_time = (2.0 * random.random()) / (mps)
-        if wait_time > etime:  #if we should wait
-            time.sleep(wait_time - etime)  #then wait
+        if mps > 0:
+            wait_time = (2.0 * random.random()) / (mps)
+            if wait_time > etime:  #if we should wait
+                time.sleep(wait_time - etime)  #then wait
 
     if sock:
         sock.close()
