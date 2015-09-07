@@ -6,7 +6,7 @@ Python client to OpenTSDB
 This was designed with a long running parent program in mind, where sending metrics was something that happens on the side.
 Implemented such that sending the metric "put" message to the Time Series Database API does not block the calling application. This is achieved by creating a background worker thread which takes metrics off the Queue, then sending them on a TCP socket to HOST. The client.log method simply sets up and puts the metric on the Queue, then returns.
 
-When the client object is instantiated, a temporary socket is created to the target HOST, PORT combination to check for connectivity. This may fail with a timeout error. However if the background thread encounters socket communication problems like timeout further down the line (in the sending metrics loop) then it will silenty keep trying to reconnect forever.
+When the client object is instantiated, a temporary socket is created to the target HOST, PORT combination to check for connectivity. This may fail with a timeout error. However if the background thread encounters socket communication problems like timeout further down the line (in the sending metrics loop) then it will silently keep trying to reconnect forever.
 
 Keep in mind that if you send a bunch of metrics through .log then immediately quit, the background thread will also terminate, without having had enough time to send your metrics properly.
 
@@ -51,7 +51,11 @@ metrics.wait()
 
 ```
 
-Authorship
+Contributers
 ===
 
-Potsdb was created by OrionVM as an internal project that has since been open sourced. Originally developed by Alex Sharp (alex.sharp@orionvm.com), it is currently developed and maintained by Chris McClymont (chris.mcclymont@orionvm.com). Pull requests and comments welcome.
+Potsdb was created by OrionVM as an internal project which was subsequently open sourced. Current contributors:
+1. Alex Sharp (alex.sharp@orionvm.com) who originally developed the project
+2. Chris McClymont (chris.mcclymont@orionvm.com), current developer and maintainer
+3. Sam Marks (http://linkedin.com/in/samuelmarks)
+4. You! Pull requests and comments welcome.
