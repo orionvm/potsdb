@@ -50,3 +50,8 @@ metrics.send('test.metric6', 34, host='app1.local')
 metrics.wait()
 
 ```
+
+Authorship
+===
+
+Potsdb was created by OrionVM as an internal project that has since been open sourced. Originally developed by Alex Sharp (alex.sharp@orionvm.com), it is currently developed and maintained by Chris McClymont (chris.mcclymont@orionvm.com). Pull requests and comments welcome.
