@@ -55,6 +55,7 @@ Contributers
 ===
 
 Potsdb was created by OrionVM as an internal project which was subsequently open sourced. Current contributors:
+
 1. Alex Sharp (alex.sharp@orionvm.com) who originally developed the project
 2. Chris McClymont (chris.mcclymont@orionvm.com), current developer and maintainer
 3. Sam Marks (http://linkedin.com/in/samuelmarks)
