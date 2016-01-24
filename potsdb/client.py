@@ -98,6 +98,8 @@ class Client():
             self.host_tag = socket.gethostname()
         elif isinstance(host_tag, str):
             self.host_tag = host_tag
+        else:
+            self.host_tag = None
 
         self.t = threading.Thread(target=_push,
                                   args=(host, self.port, self.q, self.done, mps, self._stop, test_mode))
