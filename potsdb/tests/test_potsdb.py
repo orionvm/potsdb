@@ -96,6 +96,15 @@ class TestPotsDB(TestCase):
         timestamp = int(output.split(' ')[2])
         self.assertTrue( time.time() - timestamp < 1) # within 1 seconds of current time
 
+    def test_empty_host_tag(self):
+        t = _get_client(host_tag=None)
+        output = t.log('test.metric10', 100, timestamp='1234567890', tag1='value')
+        self.assertEqual(output, "put test.metric10 1234567890 100 tag1=value\n")
+
+    def test_no_tags_error(self):
+        t = _get_client(host_tag=None)
+        self.assertRaisesRegexp(AssertionError, 'Need at least one tag', t.log, 'test.metric11', 100)
+
     @classmethod
     def tearDownClass(cls):
         print('done')
