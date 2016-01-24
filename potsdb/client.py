@@ -56,7 +56,7 @@ def _push(host, port, q, done, mps, stop, test_mode):
 
         if not test_mode:
             try:
-                sock.send(line.encode('utf-8'))
+                sock.sendall(line.encode('utf-8'))
             except:
                 sock = None  # notify that we need to make a new socket at start of loop
                 retry_line = line  # can't really put back in q, so remember to retry this line
